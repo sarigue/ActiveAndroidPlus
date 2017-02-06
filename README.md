@@ -1,5 +1,7 @@
-[![Build Status](https://travis-ci.org/pardom/ActiveAndroid.png?branch=master)](https://travis-ci.org/pardom/ActiveAndroid) [![Stories in Ready](https://badge.waffle.io/pardom/ActiveAndroid.png)](http://waffle.io/pardom/ActiveAndroid)  
+[![Build Status](https://travis-ci.org/pardom/ActiveAndroid.png?branch=master)](https://travis-ci.org/pardom/ActiveAndroid) [![Stories in Ready](https://badge.waffle.io/pardom/ActiveAndroid.png)](http://waffle.io/pardom/ActiveAndroid)
 # ActiveAndroidRx
+
+Fork from vicpinm repository.
 
 Wrapper around ActiveAndroid which introduces reactive queries with SQLBrite from Square (https://github.com/square/sqlbrite).
 You can use it as alternative for Android loaders! 
@@ -16,7 +18,7 @@ repositories {
     mavenCentral()
 }
 
-compile 'com.github.vicpinm:activeandroidrx:3.1.5'
+compile 'com.github.sarigue:activeandroidrx:3.1.5'
 ```
 
 ## Documentation
@@ -59,6 +61,8 @@ You can run the test suite by following the instructions on the [Running the Tes
 
 
 ## Author
+
+Francois Raoult | http://francois.raoult.name
 
 Víctor Manuel Pineda Murcia | http://vicpinm.github.io/ActiveAndroidRx/
 

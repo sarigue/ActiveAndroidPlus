@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply from: 'gradle-mvn-push.gradle'
 
-group = 'com.github.vicpinm'
+group = 'com.github.sarigue'
 version = '3.1.5'
 
 sourceCompatibility = 1.7
