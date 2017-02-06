@@ -15,10 +15,10 @@ You can use it as alternative for Android loaders!
 Grab via Gradle:
 ```groovy
 repositories {
-    mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
-compile 'com.github.sarigue:activeandroidrx:3.1.5'
+compile 'com.github.sarigue:activeandroidrx:master'
 ```
 
 ## Documentation
