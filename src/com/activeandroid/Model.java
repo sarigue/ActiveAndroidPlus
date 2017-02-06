@@ -69,7 +69,7 @@ public abstract class Model {
         this.mId = id;
     }
 
-    public final void delete() {
+    public void delete() {
 		Cache.openDatabase().delete(mTableInfo.getTableName(), idName+"=?", new String[] { getId().toString() });
 		Cache.removeEntity(this);
 
@@ -77,7 +77,7 @@ public abstract class Model {
 				.notifyChange(ContentProvider.createUri(mTableInfo.getType(), mId), null);
 	}
 
-	public final Long save() {
+	public Long save() {
 		final BriteDatabase db = Cache.openDatabase();
 		final ContentValues values = new ContentValues();
 
@@ -296,6 +296,42 @@ public abstract class Model {
 
 	protected final <T extends Model> List<T> getMany(Class<T> type, String foreignKey) {
 		return new Select().from(type).where(Cache.getTableName(type) + "." + foreignKey + "=?", getId()).execute();
+	}
+
+
+	protected <T extends Model, L extends Model> List<T> getMany2Many(Class<T> target, Class<L> link)	{
+		Field[] field_list = link.getFields();
+
+		// Get columns of linking object - To current objet - To target object
+		String link2local  = null;
+		String link2target = null;
+		for(Field field : field_list) {
+			Class clazz = field.getType();
+			if (clazz.equals(this.getClass())) {
+				link2local = Cache.getTableInfo(link).getColumnName(field);
+			} else if (clazz.equals(target)) {
+				link2target = Cache.getTableInfo(link).getColumnName(field);
+			}
+		}
+
+		if (link2local != null && link2target != null) {
+			return getMany2Many(target, link, link2local, link2target);
+		}
+
+		return null;
+	}
+
+	protected <T extends Model, L extends Model> List<T> getMany2Many(Class<T> target, Class<L> link, String link2local, String link2target) {
+		return new Select()
+				.from(target)
+				.innerJoin(link)
+				.on(
+						Cache.getTableName(target)+"."+Cache.getTableInfo(target).getIdName()+
+						"="+
+						Cache.getTableName(link)+"."+link2target
+				)
+				.where(Cache.getTableName(link)+"."+link2local+"= ?", this.getId())
+				.execute();
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
