@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
 	public enum ConflictAction {
-		ROLLBACK, ABORT, FAIL, IGNORE, REPLACE
+		ROLLBACK, ABORT, FAIL, IGNORE, REPLACE, UPDATE
 	}
 
 	public enum ForeignKeyAction {

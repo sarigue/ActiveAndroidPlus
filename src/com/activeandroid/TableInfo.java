@@ -16,20 +16,21 @@ package com.activeandroid;
  * limitations under the License.
  */
 
-import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
 import com.activeandroid.util.ReflectionUtils;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public final class TableInfo {
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +42,8 @@ public final class TableInfo {
 	private String mIdName = Table.DEFAULT_ID_NAME;
 
 	private Map<Field, String> mColumnNames = new LinkedHashMap<Field, String>();
+    private Map<String, List<Field>> mUniqueGroups = new LinkedHashMap<String, List<Field>>();
+    private List<Field> mUniqueKeys = new ArrayList<Field>();
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
@@ -67,6 +70,9 @@ public final class TableInfo {
         Collections.reverse(fields);
 
         for (Field field : fields) {
+
+            // Fields
+
             if (field.isAnnotationPresent(Column.class)) {
                 final Column columnAnnotation = field.getAnnotation(Column.class);
                 String columnName = columnAnnotation.name();
@@ -76,9 +82,42 @@ public final class TableInfo {
 
                 mColumnNames.put(field, columnName);
             }
-        }
 
-	}
+            // "Unique on update" fields
+
+            Column column = field.getAnnotation(Column.class);
+            Object value = null;
+            if (column == null) {
+                continue; // Not a column
+            }
+            if (! column.unique() && column.uniqueGroups().length == 0) {
+                continue; // Not unique key
+            }
+            Column.ConflictAction   conflictAction = column.onUniqueConflict();
+            Column.ConflictAction[] conflictActions = column.onUniqueConflicts();
+            if (! Column.ConflictAction.UPDATE.equals(conflictAction) && conflictActions.length == 0) {
+                continue; // No "UPDATE" action
+            }
+            if (Column.ConflictAction.UPDATE.equals(conflictAction)) {
+                mUniqueKeys.add(field);
+            }
+            String[] uniqueGroups = column.uniqueGroups();
+            Column.ConflictAction[] uniqueConflicts = column.onUniqueConflicts();
+            for(int i=0; i<uniqueGroups.length; i++) {
+                if (uniqueConflicts.length <= i) {
+                    continue;
+                }
+                if (Column.ConflictAction.UPDATE.equals(uniqueConflicts[i])) {
+                    String group = uniqueGroups[i];
+                    if (mUniqueGroups.get(group) == null) {
+                        mUniqueGroups.put(group, new LinkedList<Field>());
+                    }
+                    mUniqueGroups.get(group).add(field);
+                }
+            }
+        } // for each field
+
+    }
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PUBLIC METHODS
@@ -104,6 +143,17 @@ public final class TableInfo {
 		return mColumnNames.get(field);
 	}
 
+    public boolean hasOnUpdateFields() {
+        return ! mUniqueGroups.isEmpty() || ! mUniqueKeys.isEmpty();
+    }
+
+    public Collection<List<Field>> getUniqueGroups() {
+        return mUniqueGroups.values();
+    }
+
+    public Collection<Field> getUniqueFields() {
+        return mUniqueKeys;
+    }
 
     private Field getIdField(Class<?> type) {
         if (type.equals(Model.class)) {

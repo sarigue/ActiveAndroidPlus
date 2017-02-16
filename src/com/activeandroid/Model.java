@@ -21,12 +21,14 @@ import android.database.Cursor;
 
 import com.activeandroid.content.ContentProvider;
 import com.activeandroid.query.Delete;
+import com.activeandroid.query.From;
 import com.activeandroid.query.Select;
 import com.activeandroid.serializer.TypeSerializer;
 import com.activeandroid.sqlbrite.BriteDatabase;
 import com.activeandroid.util.Log;
 import com.activeandroid.util.ReflectionUtils;
 import com.google.gson.annotations.SerializedName;
+import com.squareup.moshi.Json;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -43,7 +45,8 @@ public abstract class Model {
 	// PRIVATE MEMBERS
 	//////////////////////////////////////////////////////////////////////////////////////
 
-    @SerializedName("id")
+	@SerializedName("id")
+	@Json(name="id")
 	private Long mId = null;
 
 	private final TableInfo mTableInfo;
@@ -65,11 +68,11 @@ public abstract class Model {
 		return mId;
 	}
 
-    public void setId(Long id) {
-        this.mId = id;
-    }
+	public void setId(Long id) {
+		this.mId = id;
+	}
 
-    public void delete() {
+	public void delete() {
 		Cache.openDatabase().delete(mTableInfo.getTableName(), idName+"=?", new String[] { getId().toString() });
 		Cache.removeEntity(this);
 
@@ -157,19 +160,82 @@ public abstract class Model {
 			}
 		}
 
+		setIdFromUniqueOnUpdate(values);
+
 		if (mId == null) {
 			mId = db.insert(mTableInfo.getTableName(), values);
 		}
 		else {
 			int updated = db.update(mTableInfo.getTableName(), values, idName+"=" + mId, null);
-            if(updated == 0) {
-                mId = db.insert(mTableInfo.getTableName(), values);
-            }
+			if(updated == 0) {
+				mId = db.insert(mTableInfo.getTableName(), values);
+			}
 		}
 
 		Cache.getContext().getContentResolver()
 				.notifyChange(ContentProvider.createUri(mTableInfo.getType(), mId), null);
 		return mId;
+	}
+
+
+	/**
+	 * Retrieve primary key from "unique" fields with "update" action
+	 */
+	private void setIdFromUniqueOnUpdate(ContentValues values)
+	{
+		if (mId != null && mId != -1) // Primary key is set yet
+		{
+			return;
+		}
+
+		if (! mTableInfo.hasOnUpdateFields()) // No Unique columns with UPDATE action
+		{
+			return;
+		}
+
+		From query = new Select(mTableInfo.getIdName()).from(this.getClass());
+
+		for(Field field : mTableInfo.getUniqueFields())
+		{
+			Object value = null;
+			try {
+				value = field.get(this);
+			}
+			catch (IllegalAccessException e) {
+				Log.e(e.getClass().getName(), e);
+			}
+
+			if (value == null) {
+				continue; // Value is null
+			}
+
+			String fieldname = mTableInfo.getColumnName(field);
+			query.or(fieldname+"=?", values.get(fieldname));
+		}
+
+		for(List<Field> fields : mTableInfo.getUniqueGroups())
+		{
+			query.startGroupOr();
+			for(Field field : fields)
+			{
+				String fieldname = mTableInfo.getColumnName(field);
+				query.and(fieldname+"=?", values.get(fieldname));
+			}
+			query.endGroup();
+		}
+
+		String sqlQuery = query.toSql();
+		Cursor cursor = Cache.openDatabase().query(sqlQuery, query.getArguments());
+
+		if (cursor != null) {
+			cursor.moveToFirst();
+			if (cursor.getCount() > 0 && cursor.getColumnCount() > 0)
+			{
+				cursor.moveToFirst();
+				mId = cursor.getLong(0);
+			}
+			cursor.close();
+		}
 	}
 
 	// Convenience methods
@@ -187,11 +253,11 @@ public abstract class Model {
 	// Model population
 
 	public final void loadFromCursor(Cursor cursor) {
-        /**
-         * Obtain the columns ordered to fix issue #106 (https://github.com/pardom/ActiveAndroid/issues/106)
-         * when the cursor have multiple columns with same name obtained from join tables.
-         */
-        List<String> columnsOrdered = new ArrayList<String>(Arrays.asList(cursor.getColumnNames()));
+		/**
+		 * Obtain the columns ordered to fix issue #106 (https://github.com/pardom/ActiveAndroid/issues/106)
+		 * when the cursor have multiple columns with same name obtained from join tables.
+		 */
+		List<String> columnsOrdered = new ArrayList<String>(Arrays.asList(cursor.getColumnNames()));
 		for (Field field : mTableInfo.getFields()) {
 			final String fieldName = mTableInfo.getColumnName(field);
 			Class<?> fieldType = field.getType();

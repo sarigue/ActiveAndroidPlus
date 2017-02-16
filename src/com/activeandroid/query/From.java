@@ -16,6 +16,7 @@ package com.activeandroid.query;
  * limitations under the License.
  */
 
+import android.database.SQLException;
 import android.text.TextUtils;
 
 import com.activeandroid.Cache;
@@ -34,14 +35,16 @@ public final class From implements Sqlable {
 	private Sqlable mQueryBase;
 
 	private Class<? extends Model> mType;
-	private String mAlias;
+	private String     mAlias;
 	private List<Join> mJoins;
 	private final StringBuilder mWhere = new StringBuilder();
-	private String mGroupBy;
-	private String mHaving;
-	private String mOrderBy;
-	private String mLimit;
-	private String mOffset;
+	private String  mGroupBy;
+	private String  mHaving;
+	private String  mOrderBy;
+	private String  mLimit;
+	private String  mOffset;
+	private int     mGroups = 0;
+	private boolean mGroupStart = false;
 
 	private List<Object> mArguments;
 
@@ -89,41 +92,77 @@ public final class From implements Sqlable {
 		return join;
 	}
 
-    public From where(String clause) {
-        // Chain conditions if a previous condition exists.
-        if (mWhere.length() > 0) {
-            mWhere.append(" AND ");
-        }
-        mWhere.append(clause);
-        return this;
-    }
+	public From startGroupAnd() {
+		if (mWhere.length() > 0) {
+			mWhere.append(" AND");
+		}
+		mWhere.append(" (");
+		mGroups++;
+		mGroupStart = true;
+		return this;
+	}
 
-    public From where(String clause, Object... args) {
-        where(clause).addArguments(args);
-        return this;
-    }
+	public From startGroupOr() {
+		if (mWhere.length() > 0) {
+			mWhere.append(" OR");
+		}
+		mWhere.append(" (");
+		mGroups++;
+		mGroupStart = true;
+		return this;
+	}
 
-    public From and(String clause) {
-        return where(clause);
-    }
+	public From endGroup() {
+		if (mGroupStart)
+		{
+			throw new SQLException("Group is empty !");
+		}
+		if (mGroups > 0)
+		{
+			mWhere.append(")");
+		}
+		mGroups--;
+		mGroupStart = false;
+		return this;
+	}
 
-    public From and(String clause, Object... args) {
-        return where(clause, args);
-    }
+	public From where(String clause) {
+		// Chain conditions if a previous condition exists.
+		if (mWhere.length() > 0 && ! mGroupStart) {
+			mWhere.append(" AND ");
+		}
+		mWhere.append(clause);
+		mGroupStart = false;
+		return this;
+	}
 
-    public From or(String clause) {
-        if (mWhere.length() > 0) {
-            mWhere.append(" OR ");
-        }
-        mWhere.append(clause);
-        return this;
-    }
+	public From where(String clause, Object... args) {
+		where(clause).addArguments(args);
+		return this;
+	}
 
-    public From or(String clause, Object... args) {
-        or(clause).addArguments(args);
-        return this;
-    }
-    
+	public From and(String clause) {
+		return where(clause);
+	}
+
+	public From and(String clause, Object... args) {
+		return where(clause, args);
+	}
+
+	public From or(String clause) {
+		if (mWhere.length() > 0 && ! mGroupStart) {
+			mWhere.append(" OR ");
+		}
+		mWhere.append(clause);
+		mGroupStart = false;
+		return this;
+	}
+
+	public From or(String clause, Object... args) {
+		or(clause).addArguments(args);
+		return this;
+	}
+
 	public From groupBy(String groupBy) {
 		mGroupBy = groupBy;
 		return this;
@@ -158,142 +197,147 @@ public final class From implements Sqlable {
 	}
 
 	void addArguments(Object[] args) {
-        for(Object arg : args) {
-            if (arg.getClass() == boolean.class || arg.getClass() == Boolean.class) {
-                arg = (arg.equals(true) ? 1 : 0);
-            }
-            mArguments.add(arg);
-        }
+		for(Object arg : args) {
+			if (arg.getClass() == boolean.class || arg.getClass() == Boolean.class) {
+				arg = (arg.equals(true) ? 1 : 0);
+			}
+			mArguments.add(arg);
+		}
 	}
 
-    private void addFrom(final StringBuilder sql) {
-        sql.append("FROM ");
-        sql.append(Cache.getTableName(mType)).append(" ");
+	private void addFrom(final StringBuilder sql) {
+		sql.append("FROM ");
+		sql.append(Cache.getTableName(mType)).append(" ");
 
-        if (mAlias != null) {
-            sql.append("AS ");
-            sql.append(mAlias);
-            sql.append(" ");
-        }
-    }
+		if (mAlias != null) {
+			sql.append("AS ");
+			sql.append(mAlias);
+			sql.append(" ");
+		}
+	}
 
-    private void addJoins(final StringBuilder sql) {
-        for (final Join join : mJoins) {
-            sql.append(join.toSql());
-        }
-    }
+	private void addJoins(final StringBuilder sql) {
+		for (final Join join : mJoins) {
+			sql.append(join.toSql());
+		}
+	}
 
-    private void addWhere(final StringBuilder sql) {
-        if (mWhere.length() > 0) {
-            sql.append("WHERE ");
-            sql.append(mWhere);
-            sql.append(" ");
-        }
-    }
+	private void addWhere(final StringBuilder sql) {
+		if (mWhere.length() > 0) {
+			sql.append("WHERE ");
+			sql.append(mWhere);
+			sql.append(" ");
+		}
+	}
 
-    private void addGroupBy(final StringBuilder sql) {
-        if (mGroupBy != null) {
-            sql.append("GROUP BY ");
-            sql.append(mGroupBy);
-            sql.append(" ");
-        }
-    }
+	private void addGroupBy(final StringBuilder sql) {
+		if (mGroupBy != null) {
+			sql.append("GROUP BY ");
+			sql.append(mGroupBy);
+			sql.append(" ");
+		}
+	}
 
-    private void addHaving(final StringBuilder sql) {
-        if (mHaving != null) {
-            sql.append("HAVING ");
-            sql.append(mHaving);
-            sql.append(" ");
-        }
-    }
+	private void addHaving(final StringBuilder sql) {
+		if (mHaving != null) {
+			sql.append("HAVING ");
+			sql.append(mHaving);
+			sql.append(" ");
+		}
+	}
 
-    private void addOrderBy(final StringBuilder sql) {
-        if (mOrderBy != null) {
-            sql.append("ORDER BY ");
-            sql.append(mOrderBy);
-            sql.append(" ");
-        }
-    }
+	private void addOrderBy(final StringBuilder sql) {
+		if (mOrderBy != null) {
+			sql.append("ORDER BY ");
+			sql.append(mOrderBy);
+			sql.append(" ");
+		}
+	}
 
-    private void addLimit(final StringBuilder sql) {
-        if (mLimit != null) {
-            sql.append("LIMIT ");
-            sql.append(mLimit);
-            sql.append(" ");
-        }
-    }
+	private void addLimit(final StringBuilder sql) {
+		if (mLimit != null) {
+			sql.append("LIMIT ");
+			sql.append(mLimit);
+			sql.append(" ");
+		}
+	}
 
-    private void addOffset(final StringBuilder sql) {
-        if (mOffset != null) {
-            sql.append("OFFSET ");
-            sql.append(mOffset);
-            sql.append(" ");
-        }
-    }
+	private void addOffset(final StringBuilder sql) {
+		if (mOffset != null) {
+			sql.append("OFFSET ");
+			sql.append(mOffset);
+			sql.append(" ");
+		}
+	}
 
-    private String sqlString(final StringBuilder sql) {
+	private String sqlString(final StringBuilder sql) {
 
-        final String sqlString = sql.toString().trim();
+		final String sqlString = sql.toString().trim();
 
-        // Don't waste time building the string
-        // unless we're going to log it.
-        if (Log.isEnabled()) {
-            Log.v(sqlString + " " + TextUtils.join(",", getArguments()));
-        }
+		// Don't waste time building the string
+		// unless we're going to log it.
+		if (Log.isEnabled()) {
+			Log.v(sqlString + " " + TextUtils.join(",", getArguments()));
+		}
 
-        return sqlString;
-    }
+		return sqlString;
+	}
 
-    @Override
-    public String toSql() {
-        final StringBuilder sql = new StringBuilder();
-        sql.append(mQueryBase.toSql());
+	@Override
+	public String toSql() {
+		final StringBuilder sql = new StringBuilder();
+		sql.append(mQueryBase.toSql());
 
-        addFrom(sql);
-        addJoins(sql);
-        addWhere(sql);
-        addGroupBy(sql);
-        addHaving(sql);
-        addOrderBy(sql);
-        addLimit(sql);
-        addOffset(sql);
+		addFrom(sql);
+		addJoins(sql);
+		addWhere(sql);
+		addGroupBy(sql);
+		addHaving(sql);
+		addOrderBy(sql);
+		addLimit(sql);
+		addOffset(sql);
 
-        return sqlString(sql);
-    }
+		if (mGroups > 0)
+		{
+			throw new SQLException("At least one group is not closed in SQL Query : "+sqlString(sql));
+		}
 
-    public String toExistsSql() {
+		return sqlString(sql);
+	}
 
-        final StringBuilder sql = new StringBuilder();
-        sql.append("SELECT EXISTS(SELECT 1 ");
+	public String toExistsSql() {
 
-        addFrom(sql);
-        addJoins(sql);
-        addWhere(sql);
-        addGroupBy(sql);
-        addHaving(sql);
-        addLimit(sql);
-        addOffset(sql);
+		final StringBuilder sql = new StringBuilder();
+		sql.append("SELECT EXISTS(SELECT 1 ");
 
-        sql.append(")");
+		addFrom(sql);
+		addJoins(sql);
+		addWhere(sql);
+		addGroupBy(sql);
+		addHaving(sql);
+		addLimit(sql);
+		addOffset(sql);
 
-        return sqlString(sql);
-    }
+		sql.append(")");
 
-    public String toCountSql() {
+		return sqlString(sql);
+	}
 
-        final StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(*) ");
+	public String toCountSql() {
 
-        addFrom(sql);
-        addJoins(sql);
-        addWhere(sql);
-        addGroupBy(sql);
-        addHaving(sql);
-        addLimit(sql);
-        addOffset(sql);
+		final StringBuilder sql = new StringBuilder();
+		sql.append("SELECT COUNT(*) ");
 
-        return sqlString(sql);
-    }
+		addFrom(sql);
+		addJoins(sql);
+		addWhere(sql);
+		addGroupBy(sql);
+		addHaving(sql);
+		addLimit(sql);
+		addOffset(sql);
+
+		return sqlString(sql);
+	}
 
 	public <T extends Model> List<T> execute() {
 		if (mQueryBase instanceof Select) {
@@ -307,15 +351,15 @@ public final class From implements Sqlable {
 		}
 	}
 
-    public <T extends Model> Observable<T> executeRx() {
-        if (mQueryBase instanceof Select) {
-            return SQLiteUtils.rawRxQuery(mType, toSql(), getArguments());
+	public <T extends Model> Observable<T> executeRx() {
+		if (mQueryBase instanceof Select) {
+			return SQLiteUtils.rawRxQuery(mType, toSql(), getArguments());
 
-        } else {
-            throw new IllegalArgumentException("Query must be instance of Select");
+		} else {
+			throw new IllegalArgumentException("Query must be instance of Select");
 
-        }
-    }
+		}
+	}
 
 	public <T extends Model> T executeSingle() {
 		if (mQueryBase instanceof Select) {
@@ -330,20 +374,20 @@ public final class From implements Sqlable {
 		}
 	}
 	
-    /**
-     * Gets a value indicating whether the query returns any rows.
-     * @return <code>true</code> if the query returns at least one row; otherwise, <code>false</code>.
-     */
-    public boolean exists() {
-        return SQLiteUtils.intQuery(toExistsSql(), getArguments()) != 0;
-    }
+	/**
+	 * Gets a value indicating whether the query returns any rows.
+	 * @return <code>true</code> if the query returns at least one row; otherwise, <code>false</code>.
+	 */
+	public boolean exists() {
+		return SQLiteUtils.intQuery(toExistsSql(), getArguments()) != 0;
+	}
 
-    /**
-     * Gets the number of rows returned by the query.
-     */
-    public int count() {
-        return SQLiteUtils.intQuery(toCountSql(), getArguments());
-    }
+	/**
+	 * Gets the number of rows returned by the query.
+	 */
+	public int count() {
+		return SQLiteUtils.intQuery(toCountSql(), getArguments());
+	}
 
 	public String[] getArguments() {
 		final int size = mArguments.size();

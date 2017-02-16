@@ -178,7 +178,9 @@ public final class SQLiteUtils {
         for (String key : keySet) {
             List<String> group = sUniqueGroupMap.get(key);
             ConflictAction conflictAction = sOnUniqueConflictsMap.get(key);
-
+            if (ConflictAction.UPDATE.equals(conflictAction)) {
+                conflictAction = ConflictAction.IGNORE;
+            }
             definitions.add(String.format("UNIQUE (%s) ON CONFLICT %s",
                     TextUtils.join(", ", group), conflictAction.toString()));
         }
@@ -327,8 +329,12 @@ public final class SQLiteUtils {
                 }
 
                 if (column.unique()) {
+                    ConflictAction conflictAction = column.onUniqueConflict();
                     definition.append(" UNIQUE ON CONFLICT ");
-                    definition.append(column.onUniqueConflict().toString());
+                    if (ConflictAction.UPDATE.equals(conflictAction)) {
+                        conflictAction = ConflictAction.IGNORE;
+                    }
+                    definition.append(conflictAction.toString());
                 }
             }
 

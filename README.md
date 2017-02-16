@@ -1,14 +1,20 @@
 [![Build Status](https://travis-ci.org/pardom/ActiveAndroid.png?branch=master)](https://travis-ci.org/pardom/ActiveAndroid) [![Stories in Ready](https://badge.waffle.io/pardom/ActiveAndroid.png)](http://waffle.io/pardom/ActiveAndroid)
-# ActiveAndroidRx
+# ActiveAndroidPlus
 
-Fork from vicpinm repository.
+Fork from ActiveAndroidRx (vicpinm repository) version 3.1.5
 
-Wrapper around ActiveAndroid which introduces reactive queries with SQLBrite from Square (https://github.com/square/sqlbrite).
-You can use it as alternative for Android loaders! 
+- ActiveAndroidRx : Reactive queries with SQLBrite from Square
+- UPDATE onConflictAction
 
 ## Usage
 
+ActiveAndroidRx:
+
     RxSelect.from(MyEntity.class).where(...).execute().subscribe(myEntitiesList -> ...);
+
+UPDATE OnConflictAction:
+
+    @Column(... onConlictAction=ConflictAction.UPDATE)
     
 ## Download
 
@@ -18,7 +24,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-compile 'com.github.sarigue:activeandroidrx:master'
+compile 'com.github.sarigue:activeandroidplus:master'
 ```
 
 ## Documentation
