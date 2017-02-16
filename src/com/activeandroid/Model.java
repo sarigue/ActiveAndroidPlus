@@ -34,6 +34,7 @@ import com.squareup.moshi.Json;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 @SuppressWarnings("unchecked")
@@ -184,6 +185,8 @@ public abstract class Model {
 	 */
 	private void setIdFromUniqueOnUpdate(ContentValues values)
 	{
+		Log.d("ActiveAndroid", "Search mId from Unique keys for class "+this.getClass());
+
 		if (mId != null && mId != -1) // Primary key is set yet
 		{
 			Log.d("ActiveAndroid", "mId is et yet with value : "+mId+" for class "+this.getClass());
@@ -200,31 +203,35 @@ public abstract class Model {
 
 		for(Field field : mTableInfo.getUniqueFields())
 		{
-			Object value = null;
-			try {
-				value = field.get(this);
-			}
-			catch (IllegalAccessException e) {
-				Log.e(e.getClass().getName(), e);
-			}
-
+			String fieldname = mTableInfo.getColumnName(field);
+			Object value = values.get(fieldname);
 			if (value == null) {
 				continue; // Value is null
 			}
-
-			String fieldname = mTableInfo.getColumnName(field);
 			query.or(fieldname+"=?", values.get(fieldname));
 		}
 
 		for(List<Field> fields : mTableInfo.getUniqueGroups())
 		{
-			query.startGroupOr();
+			LinkedList<String> fieldname_list = new LinkedList<String>();
 			for(Field field : fields)
 			{
 				String fieldname = mTableInfo.getColumnName(field);
-				query.and(fieldname+"=?", values.get(fieldname));
+				Object value = values.get(fieldname);
+				if (value == null) {
+					continue; // Value is null
+				}
+				fieldname_list.add(fieldname);
 			}
-			query.endGroup();
+			if (! fieldname_list.isEmpty())
+			{
+				query.startGroupOr();
+				for(String fieldname : fieldname_list)
+				{
+					query.and(fieldname+"=?", values.get(fieldname));
+				}
+				query.endGroup();
+			}
 		}
 
 		String sqlQuery = query.toSql();
