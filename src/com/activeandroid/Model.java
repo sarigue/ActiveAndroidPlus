@@ -193,7 +193,7 @@ public abstract class Model {
 			return;
 		}
 
-		From query = new Select(mTableInfo.getIdName()).from(this.getClass());
+		From query = new Select(idName).from(this.getClass());
 
 		for(Field field : mTableInfo.getUniqueFields())
 		{
@@ -231,8 +231,8 @@ public abstract class Model {
 			cursor.moveToFirst();
 			if (cursor.getCount() > 0 && cursor.getColumnCount() > 0)
 			{
-				cursor.moveToFirst();
-				mId = cursor.getLong(0);
+				mId = cursor.getLong(cursor.getColumnIndex(idName));
+				Log.d("ActiveAndroid", "mId = "+mId+" from SQL "+sqlQuery);
 			}
 			cursor.close();
 		}
