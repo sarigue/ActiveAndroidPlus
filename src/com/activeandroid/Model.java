@@ -18,6 +18,7 @@ package com.activeandroid;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 
 import com.activeandroid.content.ContentProvider;
 import com.activeandroid.query.Delete;
@@ -185,11 +186,13 @@ public abstract class Model {
 	{
 		if (mId != null && mId != -1) // Primary key is set yet
 		{
+			Log.d("ActiveAndroid", "mId is et yet with value : "+mId+" for class "+this.getClass());
 			return;
 		}
 
 		if (! mTableInfo.hasOnUpdateFields()) // No Unique columns with UPDATE action
 		{
+			Log.d("ActiveAndroid", "No unique key with UPDATE action !"+" for class "+this.getClass());
 			return;
 		}
 
@@ -225,6 +228,7 @@ public abstract class Model {
 		}
 
 		String sqlQuery = query.toSql();
+		Log.d("ActiveAndroid", "Execute SQL "+sqlQuery+" with args = "+ TextUtils.join(",", query.getArguments()));
 		Cursor cursor = Cache.openDatabase().query(sqlQuery, query.getArguments());
 
 		if (cursor != null) {
@@ -232,7 +236,11 @@ public abstract class Model {
 			if (cursor.getCount() > 0 && cursor.getColumnCount() > 0)
 			{
 				mId = cursor.getLong(cursor.getColumnIndex(idName));
-				Log.d("ActiveAndroid", "mId = "+mId+" from SQL "+sqlQuery);
+				Log.d("ActiveAndroid", "mId = "+mId+" for SQL query "+sqlQuery);
+			}
+			else
+			{
+				Log.d("ActiveAndroid", "No result for SQL query "+sqlQuery);
 			}
 			cursor.close();
 		}
