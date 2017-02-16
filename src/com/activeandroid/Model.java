@@ -165,9 +165,11 @@ public abstract class Model {
 		setIdFromUniqueOnUpdate(values);
 
 		if (mId == null) {
+			Log.d("ActiveAndroid", "Insert values in "+mTableInfo.getTableName()+" : {"+values.toString()+"}");
 			mId = db.insert(mTableInfo.getTableName(), values);
 		}
 		else {
+			Log.d("ActiveAndroid", "Update values in "+mTableInfo.getTableName()+" for ID = "+mId+" : {"+values.toString()+"}");
 			int updated = db.update(mTableInfo.getTableName(), values, idName+"=" + mId, null);
 			if(updated == 0) {
 				mId = db.insert(mTableInfo.getTableName(), values);
