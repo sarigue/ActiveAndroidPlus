@@ -18,6 +18,7 @@ package com.activeandroid;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 
 import com.activeandroid.content.ContentProvider;
 import com.activeandroid.query.Delete;
@@ -195,6 +196,7 @@ public abstract class Model {
 			return;
 		}
 
+		boolean executeQuery = false;
 		From query = new Select(idName).from(this.getClass());
 
 		for(Field field : mTableInfo.getUniqueFields())
@@ -205,6 +207,7 @@ public abstract class Model {
 				continue; // Value is null
 			}
 			query.or(fieldname+"=?", values.get(fieldname));
+			executeQuery = true;
 		}
 
 		for(List<Field> fields : mTableInfo.getUniqueGroups())
@@ -227,11 +230,18 @@ public abstract class Model {
 					query.and(fieldname+"=?", values.get(fieldname));
 				}
 				query.endGroup();
+				executeQuery = true;
 			}
+		}
+
+		if (! executeQuery)
+		{
+			Log.v("No UNIQUE column with not null value");
 		}
 
 		String sqlQuery = query.toSql();
 		Cursor cursor = Cache.openDatabase().query(sqlQuery, query.getArguments());
+		Log.v("Get ID from UNIQUE columns\nQuery "+sqlQuery+"\nArguments: "+ TextUtils.join(",", query.getArguments()));
 
 		if (cursor != null) {
 			cursor.moveToFirst();
