@@ -180,7 +180,7 @@ public final class From implements Sqlable {
 		return this;
 	}
 
-	public From in(String columnName, List<Object> values)
+	public From in(String columnName, List values)
 	{
 		return in(columnName, values.toArray());
 	}
@@ -190,7 +190,7 @@ public final class From implements Sqlable {
 		return in(columnName, values);
 	}
 
-	public From andIn(String columnName, List<Object> values)
+	public From andIn(String columnName, List values)
 	{
 		return in(columnName, values);
 	}
@@ -201,7 +201,7 @@ public final class From implements Sqlable {
 		return this;
 	}
 
-	public From orIn(String columnName, List<Object> values)
+	public From orIn(String columnName, List values)
 	{
 		return orIn(columnName, values.toArray());
 	}
@@ -214,7 +214,7 @@ public final class From implements Sqlable {
 		return this;
 	}
 
-	public From notIn(String columnName, List<Object> values)
+	public From notIn(String columnName, List values)
 	{
 		return in(columnName, values.toArray());
 	}
@@ -224,7 +224,7 @@ public final class From implements Sqlable {
 		return in(columnName, values);
 	}
 
-	public From andNotIn(String columnName, List<Object> values)
+	public From andNotIn(String columnName, List values)
 	{
 		return in(columnName, values);
 	}
@@ -235,7 +235,7 @@ public final class From implements Sqlable {
 		return this;
 	}
 
-	public From orNotIn(String columnName, List<Object> values)
+	public From orNotIn(String columnName, List values)
 	{
 		return orIn(columnName, values.toArray());
 	}
