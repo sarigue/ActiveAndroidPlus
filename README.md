@@ -5,6 +5,7 @@ Fork from ActiveAndroidRx (vicpinm repository) version 3.1.5
 
 - ActiveAndroidRx : Reactive queries with SQLBrite from Square
 - UPDATE onConflictAction
+- in() andIn() orIn() methods in From class (in() and andIn() are same method)
 
 ## Usage
 
@@ -19,13 +20,19 @@ UPDATE OnConflictAction:
 ## Download
 
 Grab via Gradle:
-```groovy
+```
+groovy
 repositories {
     maven { url "https://jitpack.io" }
 }
 
 compile 'com.github.sarigue:activeandroidplus:master'
 ```
+or
+```
+compile 'com.github.sarigue:activeandroidplus:(commit ID)'
+```
+
 
 ## Documentation
 
