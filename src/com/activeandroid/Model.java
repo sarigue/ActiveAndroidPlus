@@ -237,6 +237,7 @@ public abstract class Model {
 		if (! executeQuery)
 		{
 			Log.v("No UNIQUE column with not null value");
+			return;
 		}
 
 		String sqlQuery = query.toSql();
