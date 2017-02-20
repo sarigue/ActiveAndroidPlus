@@ -176,7 +176,7 @@ public final class From implements Sqlable {
 
 	public From in(String columnName, Object... values)
 	{
-		where(columnName+" IN ").argGroup(values.length).addArguments(values);
+		where(columnName+" IN ").placeholder(values).addArguments(values);
 		return this;
 	}
 
@@ -197,7 +197,7 @@ public final class From implements Sqlable {
 
 	public From orIn(String columnName, Object... values)
 	{
-		or(columnName+" IN ").argGroup(values.length).addArguments(values);
+		or(columnName+" IN ").placeholder(values).addArguments(values);
 		return this;
 	}
 
@@ -210,7 +210,7 @@ public final class From implements Sqlable {
 
 	public From notIn(String columnName, Object... values)
 	{
-		where(columnName+" NOT IN ").argGroup(values.length).addArguments(values);
+		where(columnName+" NOT IN ").placeholder(values).addArguments(values);
 		return this;
 	}
 
@@ -231,7 +231,7 @@ public final class From implements Sqlable {
 
 	public From orNotIn(String columnName, Object... values)
 	{
-		or(columnName+" NOT IN ").argGroup(values.length).addArguments(values);
+		or(columnName+" NOT IN ").placeholder(values).addArguments(values);
 		return this;
 	}
 
@@ -292,17 +292,28 @@ public final class From implements Sqlable {
 		}
 	}
 
-	private From argGroup(int length)
+	private From placeholder(Object[] args)
 	{
 		mWhere.append("(");
-		for(int i=0; i<length; i++)
-		{
-			if (i > 0) mWhere.append(",");
-			mWhere.append("?");
-		}
+		innerPlaceholderGroup(args);
 		mWhere.append(")");
 		return this;
 	}
+
+	private From innerPlaceholderGroup(Object[] args)
+	{
+		for(int i=0; i<args.length; i++) {
+			if (i > 0) mWhere.append(",");
+			if (args[i] instanceof Object[])
+				innerPlaceholderGroup((Object[])args[i]);
+			else if (args[i] instanceof List)
+				innerPlaceholderGroup(((List<?>)args[i]).toArray());
+			else
+				mWhere.append("?");
+		}
+		return this;
+	}
+
 
 	// -- Construct query
 
