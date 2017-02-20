@@ -285,6 +285,14 @@ public final class From implements Sqlable {
 
 	void addArguments(Object[] args) {
 		for(Object arg : args) {
+			if (arg instanceof Object[]) {
+				addArguments((Object[])arg);
+				continue;
+			}
+			if (arg instanceof List) {
+				addArguments(((List<?>)arg).toArray());
+				continue;
+			}
 			if (arg.getClass() == boolean.class || arg.getClass() == Boolean.class) {
 				arg = (arg.equals(true) ? 1 : 0);
 			}
