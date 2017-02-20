@@ -57,10 +57,15 @@ public final class From implements Sqlable {
 		mArguments = new ArrayList<Object>();
 	}
 
+	// -- Alias
+
 	public From as(String alias) {
 		mAlias = alias;
 		return this;
 	}
+
+
+	// -- Join
 
 	public Join join(Class<? extends Model> table) {
 		Join join = new Join(this, table, null);
@@ -91,6 +96,8 @@ public final class From implements Sqlable {
 		mJoins.add(join);
 		return join;
 	}
+
+	// -- Groups
 
 	public From startGroupAnd() {
 		if (mWhere.length() > 0) {
@@ -125,6 +132,8 @@ public final class From implements Sqlable {
 		mGroupStart = false;
 		return this;
 	}
+
+	// -- Where / and / or
 
 	public From where(String clause) {
 		// Chain conditions if a previous condition exists.
@@ -163,9 +172,11 @@ public final class From implements Sqlable {
 		return this;
 	}
 
+	// -- In / Not In
+
 	public From in(String columnName, Object... values)
 	{
-		and(createInClause(columnName, values)).addArguments(values);
+		where(columnName+" IN ").argGroup(values.length).addArguments(values);
 		return this;
 	}
 
@@ -186,7 +197,7 @@ public final class From implements Sqlable {
 
 	public From orIn(String columnName, Object... values)
 	{
-		or(createInClause(columnName, values)).addArguments(values);
+		or(columnName+" IN ").argGroup(values.length).addArguments(values);
 		return this;
 	}
 
@@ -195,35 +206,62 @@ public final class From implements Sqlable {
 		return orIn(columnName, (Object[])values.toArray());
 	}
 
+	// --
 
-	private String createInClause(String columnName, Object... values)
+	public From notIn(String columnName, Object... values)
 	{
-		StringBuilder inClause = new StringBuilder();
-		inClause.append(columnName);
-		inClause.append(" IN (");
-		for(int i=0; i<values.length; i++)
-		{
-			if (i > 0) inClause.append(",");
-			inClause.append("?");
-		}
-		inClause.append(")");
-		return inClause.toString();
+		where(columnName+" NOT IN ").argGroup(values.length).addArguments(values);
+		return this;
 	}
+
+	public From notIn(String columnName, List<Object> values)
+	{
+		return in(columnName, (Object[])values.toArray());
+	}
+
+	public From andNotIn(String columnName, Object... values)
+	{
+		return in(columnName, values);
+	}
+
+	public From andNotIn(String columnName, List<Object> values)
+	{
+		return in(columnName, values);
+	}
+
+	public From orNotIn(String columnName, Object... values)
+	{
+		or(columnName+" NOT IN ").argGroup(values.length).addArguments(values);
+		return this;
+	}
+
+	public From orNotIn(String columnName, List<Object> values)
+	{
+		return orIn(columnName, (Object[])values.toArray());
+	}
+
+	// -- Group
 
 	public From groupBy(String groupBy) {
 		mGroupBy = groupBy;
 		return this;
 	}
 
+	// -- Having
+
 	public From having(String having) {
 		mHaving = having;
 		return this;
 	}
 
+	// -- Order
+
 	public From orderBy(String orderBy) {
 		mOrderBy = orderBy;
 		return this;
 	}
+
+	// -- Limit / Offset
 
 	public From limit(int limit) {
 		return limit(String.valueOf(limit));
@@ -243,6 +281,8 @@ public final class From implements Sqlable {
 		return this;
 	}
 
+	// Internal
+
 	void addArguments(Object[] args) {
 		for(Object arg : args) {
 			if (arg.getClass() == boolean.class || arg.getClass() == Boolean.class) {
@@ -251,6 +291,20 @@ public final class From implements Sqlable {
 			mArguments.add(arg);
 		}
 	}
+
+	private From argGroup(int length)
+	{
+		mWhere.append("(");
+		for(int i=0; i<length; i++)
+		{
+			if (i > 0) mWhere.append(",");
+			mWhere.append("?");
+		}
+		mWhere.append(")");
+		return this;
+	}
+
+	// -- Construct query
 
 	private void addFrom(final StringBuilder sql) {
 		sql.append("FROM ");
@@ -329,6 +383,8 @@ public final class From implements Sqlable {
 
 		return sqlString;
 	}
+
+	// Get SQL String
 
 	@Override
 	public String toSql() {
