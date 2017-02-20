@@ -32,6 +32,9 @@ import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public final class ActiveAndroid {
+
+    protected static BriteDatabase.Transaction sLastTransaction = null;
+
     //////////////////////////////////////////////////////////////////////////////////////
     // PUBLIC METHODS
     //////////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +74,44 @@ public final class ActiveAndroid {
     }
 
     public static BriteDatabase.Transaction beginTransaction() {
-        return Cache.openDatabase().newTransaction();
+        sLastTransaction = Cache.openDatabase().newTransaction();
+        return sLastTransaction;
+    }
+
+    /** End of last transaction */
+    public static void endTransaction() {
+        if (sLastTransaction != null) {
+            endTransaction(sLastTransaction);
+            sLastTransaction = null;
+        }
+    }
+
+    /** Mark last transaction as successful */
+    public static void setTransactionSuccessful() {
+        if (sLastTransaction != null) {
+            setTransactionSuccessful(sLastTransaction);
+            sLastTransaction.close();
+        }
+    }
+
+    /** Commit last transaction : marksuccessful + end */
+    public static void commitTransaction() {
+        if (sLastTransaction != null) {
+            commitTransaction(sLastTransaction);
+            sLastTransaction = null;
+        }
+    }
+
+    /** Get last transaction if not ended */
+    public static BriteDatabase.Transaction getLastTransaction()
+    {
+        return sLastTransaction;
+    }
+
+    /** Mark transaction as successful and end it one */
+    public static void commitTransaction(BriteDatabase.Transaction transaction){
+        transaction.markSuccessful();
+        transaction.end();
     }
 
     public static void endTransaction(BriteDatabase.Transaction transaction) {

@@ -6,6 +6,7 @@ Fork from ActiveAndroidRx (vicpinm repository) version 3.1.5
 - ActiveAndroidRx : Reactive queries with SQLBrite from Square
 - UPDATE onConflictAction
 - in() andIn() orIn() methods in From class (in() and andIn() are same method)
+- Manipulate last transaction in static mode
 
 ## Usage
 
@@ -16,7 +17,15 @@ ActiveAndroidRx:
 UPDATE OnConflictAction:
 
     @Column(... onConlictAction=ConflictAction.UPDATE)
-    
+
+Transaction
+
+    ActiveAndroid.beginTransaction();         // Start a new transaction. Return a SQLBrite.Transaction
+    ActiveAndroid.commitTransaction();        // Mark last transaction as successful and end it one
+    ActiveAndroid.setTransactionSuccessful(); // Mark last transaction as successful
+    ActiveAndroid.endTransaction();           // End last transaction (rollback if no marked as successful)
+    ActiveAndroid.getLastTransaction;         // Get last SQLBrite.Transaction if not ended
+
 ## Download
 
 Grab via Gradle:
